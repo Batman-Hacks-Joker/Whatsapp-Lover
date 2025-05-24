@@ -1,0 +1,37 @@
+
+export interface ChatMessage {
+  id: string; // Unique ID for each message
+  timestamp: Date;
+  user: string;
+  message: string;
+}
+
+export interface UserMessageCount {
+  user: string;
+  count: number;
+}
+
+export interface HourlyDistributionItem {
+  hour: string; // "00", "01", ..., "23"
+  count: number;
+}
+
+export interface TemporalDataItem {
+  date: string; // "YYYY-MM-DD"
+  [user: string]: number | string; // Message counts for each user, plus the date string
+}
+
+export interface AnalyzedData {
+  totalMessages: number;
+  userMessageCounts: UserMessageCount[];
+  temporalVolume: {
+    daily: TemporalDataItem[];
+  };
+  hourlyDistribution: HourlyDistributionItem[];
+  allUsers: string[]; // List of all unique users found in the filtered data
+}
+
+export interface DateRange {
+  from: Date | undefined;
+  to: Date | undefined;
+}
