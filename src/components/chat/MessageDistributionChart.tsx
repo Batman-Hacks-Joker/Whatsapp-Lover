@@ -1,7 +1,7 @@
 "use client";
 
 import type { UserMessageCount } from '@/types/chat';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
@@ -12,14 +12,20 @@ import {
 } from '@/components/ui/chart';
 import { CardDescription } from '../ui/card';
 
-interface MessageDistributionChartProps {
-  data: UserMessageCount[];
-}
+// Define colors for the bars
+const barColors = [
+  'hsl(var(--chart-2))', // Green - for the user with most messages
+  'hsl(var(--chart-1))', // Light Sky Blue - for the second user
+  'hsl(var(--chart-3))', // Orange
+  'hsl(var(--chart-4))', // Purple
+  'hsl(var(--chart-5))', // Pink
+];
 
+// Chart config for legend - will show the primary user's color (Green)
 const chartConfig = {
   messages: {
     label: 'Messages',
-    color: 'hsl(var(--chart-1))',
+    color: 'hsl(var(--chart-2))', // Green, matching the first bar color
   },
 } satisfies ChartConfig;
 
@@ -58,7 +64,11 @@ export function MessageDistributionChart({ data }: MessageDistributionChartProps
             content={<ChartTooltipContent indicator="dashed" />}
           />
            <ChartLegend content={<ChartLegendContent />} />
-          <Bar dataKey="count" name="Messages" fill="var(--color-messages)" radius={4} />
+          <Bar dataKey="count" name="Messages" radius={4}>
+            {displayData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={barColors[index % barColors.length]} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </ChartContainer>

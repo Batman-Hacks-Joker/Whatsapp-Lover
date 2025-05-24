@@ -36,11 +36,11 @@ body {
     --input: 0 0% 89.8%;
     --ring: 160 33% 72%; /* Use accent for ring */
 
-    --chart-1: 160 40% 50%; /* Teal */
-    --chart-2: 90 40% 55%;  /* Green */
-    --chart-3: 140 35% 60%; /* Bluish Green */
-    --chart-4: 170 30% 40%; /* Darker Teal */
-    --chart-5: 70 35% 65%;  /* Yellowish Green */
+    --chart-1: 200 82% 76%; /* Light Sky Blue */
+    --chart-2: 130 50% 55%; /* Green */
+    --chart-3: 30 80% 60%;  /* Orange - was Bluish Green */
+    --chart-4: 280 70% 65%; /* Purple - was Darker Teal */
+    --chart-5: 340 75% 70%; /* Pink - was Yellowish Green */
 
     --radius: 0.5rem;
 
@@ -77,11 +77,11 @@ body {
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
 
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-1: 200 70% 65%; /* Light Sky Blue - Dark mode */
+    --chart-2: 130 50% 50%; /* Green - Dark mode */
+    --chart-3: 30 70% 55%;  /* Orange - Dark mode */
+    --chart-4: 280 60% 60%; /* Purple - Dark mode */
+    --chart-5: 340 65% 60%; /* Pink - Dark mode */
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
