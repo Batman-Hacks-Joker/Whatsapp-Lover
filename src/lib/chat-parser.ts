@@ -1,13 +1,106 @@
+
 import type { ChatMessage } from '@/types/chat';
 import { parse as parseDate, isValid } from 'date-fns';
 
-// Regex for a common format: MM/DD/YY, HH:mm - User Name: Message content
+// General WhatsApp-style regex: captures dates with . or /, optional AM/PM, flexible spacing
 // Example: 1/15/23, 10:00 - Alice: Hello world
-// Or: 01/15/2023, 10:00 AM - Alice: Message content
-const WHATSAPP_STYLE_REGEX = /^(\d{1,2}\/\d{1,2}\/\d{2,4}), (\d{1,2}:\d{2}(?: [AP]M)?) - ([^:]+): ([\s\S]+)$/;
+// Or: 15.01.2023, 10:00 AM - Bob: Message
+const WHATSAPP_GENERAL_REGEX = /^(\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4}),\s*(\d{1,2}:\d{2}(?:\s*[AP]M)?)\s*-\s*([^:]+):\s*([\s\S]+)$/;
 
 // Simpler regex: [YYYY-MM-DD HH:MM:SS] User: Message
 const GENERIC_STYLE_REGEX = /^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] ([^:]+): ([\s\S]+)$/;
+
+function parseMdyTimestamp(dateStrRaw: string, timeStr: string): Date | null {
+    const fullDateTimeStr = `${dateStrRaw}, ${timeStr}`;
+    // Order matters: try more specific (e.g. MM/dd/yyyy) before less specific (M/d/yy) if there's ambiguity,
+    // but date-fns parse is generally good at picking the right one from these.
+    const formatsToTry = [
+        // MDY with /
+        'MM/dd/yyyy, h:mm a', 'MM/dd/yyyy, HH:mm',
+        'M/d/yyyy, h:mm a', 'M/d/yyyy, HH:mm',
+        'MM/dd/yy, h:mm a', 'MM/dd/yy, HH:mm',
+        'M/d/yy, h:mm a', 'M/d/yy, HH:mm',
+        // MDY with .
+        'MM.dd.yyyy, h:mm a', 'MM.dd.yyyy, HH:mm',
+        'M.d.yyyy, h:mm a', 'M.d.yyyy, HH:mm',
+        'MM.dd.yy, h:mm a', 'MM.dd.yy, HH:mm',
+        'M.d.yy, h:mm a', 'M.d.yy, HH:mm',
+    ];
+    for (const fmt of formatsToTry) {
+        const parsed = parseDate(fullDateTimeStr, fmt, new Date());
+        if (isValid(parsed)) return parsed;
+    }
+    return null;
+}
+
+function parseDmyTimestamp(dateStrRaw: string, timeStr: string): Date | null {
+    const fullDateTimeStr = `${dateStrRaw}, ${timeStr}`;
+    const formatsToTry = [
+        // DMY with /
+        'dd/MM/yyyy, h:mm a', 'dd/MM/yyyy, HH:mm',
+        'd/M/yyyy, h:mm a', 'd/M/yyyy, HH:mm',
+        'dd/MM/yy, h:mm a', 'dd/MM/yy, HH:mm',
+        'd/M/yy, h:mm a', 'd/M/yy, HH:mm',
+        // DMY with .
+        'dd.MM.yyyy, h:mm a', 'dd.MM.yyyy, HH:mm',
+        'd.M.yyyy, h:mm a', 'd.M.yyyy, HH:mm',
+        'dd.MM.yy, h:mm a', 'dd.MM.yy, HH:mm',
+        'd.M.yy, h:mm a', 'd.M.yy, HH:mm',
+    ];
+    for (const fmt of formatsToTry) {
+        const parsed = parseDate(fullDateTimeStr, fmt, new Date());
+        if (isValid(parsed)) return parsed;
+    }
+    return null;
+}
+
+interface LineParserResult {
+  timestamp: Date;
+  user: string;
+  message: string;
+}
+
+interface LineParser {
+    regex: RegExp;
+    parseFn: (match: RegExpMatchArray) => LineParserResult | null;
+}
+
+const TXT_PARSERS: LineParser[] = [
+    {
+        regex: WHATSAPP_GENERAL_REGEX,
+        parseFn: (match: RegExpMatchArray): LineParserResult | null => {
+            const datePart = match[1];
+            const timePart = match[2];
+            const user = match[3];
+            const messageContent = match[4];
+
+            // Try parsing as MDY first (common in US)
+            let ts = parseMdyTimestamp(datePart, timePart);
+            // If MDY fails or returns an invalid date, try DMY
+            if (!ts || !isValid(ts)) {
+                ts = parseDmyTimestamp(datePart, timePart);
+            }
+
+            if (ts && isValid(ts)) {
+                return { timestamp: ts, user: user.trim(), message: messageContent.trim() };
+            }
+            return null;
+        }
+    },
+    {
+        regex: GENERIC_STYLE_REGEX,
+        parseFn: (match: RegExpMatchArray): LineParserResult | null => {
+            const dateTimeString = match[1]; // "YYYY-MM-DD HH:MM:SS"
+            const user = match[2];
+            const messageContent = match[3];
+            const timestamp = parseDate(dateTimeString, 'yyyy-MM-dd HH:mm:ss', new Date());
+            if (isValid(timestamp)) {
+                return { timestamp, user: user.trim(), message: messageContent.trim() };
+            }
+            return null;
+        }
+    }
+];
 
 
 export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): ChatMessage[] {
@@ -16,34 +109,50 @@ export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): Cha
   let unknownLines = 0;
 
   if (fileType === 'csv') {
-    // Basic CSV parsing assuming "timestamp,user,message" or "date,time,user,message"
-    // This is a placeholder and would need a more robust CSV parser for production
-    console.warn("CSV parsing is basic. Assumes specific column orders.");
+    console.warn("CSV parsing is basic. Assumes specific column orders and comma as delimiter without escaping.");
     lines.forEach((line, index) => {
-      if (index === 0 && (line.toLowerCase().includes('timestamp') || line.toLowerCase().includes('date'))) return; // Skip header
+      if (index === 0 && (line.toLowerCase().includes('timestamp') || line.toLowerCase().includes('date') || line.toLowerCase().includes('time'))) return; // Skip header
 
-      const parts = line.split(',');
+      const parts = line.split(','); // Naive split, won't handle commas in messages
       if (parts.length >= 3) {
-        let timestampStr = parts[0];
-        let user = parts[1];
-        let message = parts.slice(2).join(',');
+        let timestampStr = parts[0].trim();
+        let user = parts[1].trim();
+        let message = parts.slice(2).join(',').trim(); // Re-joins the rest
         
-        if (parts.length >= 4 && parts[0].match(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/)) { // date,time,user,message format
-            timestampStr = `${parts[0]} ${parts[1]}`;
-            user = parts[2];
-            message = parts.slice(3).join(',');
+        // Attempt to handle "Date, Time, User, Message" structure
+        if (parts.length >= 4 && parts[0].match(/^\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4}$/i) && parts[1].match(/^\d{1,2}:\d{2}(?:\s*[AP]M)?$/i)) {
+            timestampStr = `${parts[0].trim()} ${parts[1].trim()}`;
+            user = parts[2].trim();
+            message = parts.slice(3).join(',').trim();
         }
         
-        const parsedTimestamp = new Date(timestampStr); // Attempt direct parsing
-        if (isValid(parsedTimestamp)) {
+        let parsedTimestamp: Date | null = null;
+        // Try common date/time parsing for CSV timestamps
+        // These functions expect "date, time" structure, so we pass date as first arg, time as second (if available)
+        // If timestampStr is already combined, it might work with one of the internal formats.
+        const dateTimeParts = timestampStr.split(/[\s,]+/); // Split by space or comma
+        const datePart = dateTimeParts[0];
+        const timePart = dateTimeParts.length > 1 ? dateTimeParts.slice(1).join(' ') : '00:00'; // Default time if not present
+
+        parsedTimestamp = parseMdyTimestamp(datePart, timePart);
+        if (!parsedTimestamp || !isValid(parsedTimestamp)) {
+            parsedTimestamp = parseDmyTimestamp(datePart, timePart);
+        }
+        // Fallback for ISO-like or other direct parses
+        if (!parsedTimestamp || !isValid(parsedTimestamp)) {
+             parsedTimestamp = new Date(timestampStr); // Last resort direct parse
+        }
+
+
+        if (parsedTimestamp && isValid(parsedTimestamp)) {
            messages.push({
-            id: `msg-${Date.now()}-${index}`,
+            id: `msg-${parsedTimestamp.getTime()}-${messages.length}`,
             timestamp: parsedTimestamp,
-            user: user.trim(),
-            message: message.trim(),
+            user: user,
+            message: message,
           });
         } else {
-          unknownLines++;
+          if (line.trim() !== '') unknownLines++;
         }
       } else if (line.trim() !== '') {
         unknownLines++;
@@ -51,23 +160,21 @@ export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): Cha
     });
 
   } else { // TXT parsing
-    let currentMessageBuffer: Partial<ChatMessage> = {};
-    let lastMessageTimestamp: Date | null = null;
+    let currentMessageBuffer: Partial<LineParserResult> = {};
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      let match = line.match(WHATSAPP_STYLE_REGEX);
-      let dateFormat = 'M/d/yy, HH:mm';
-      if (match && match[2].toLowerCase().includes('m')) { // if AM/PM is present
-        dateFormat = 'M/d/yy, hh:mm a';
+    for (const line of lines) {
+      if (line.trim() === '') continue; // Skip empty lines
+
+      let parsedLineData: LineParserResult | null = null;
+      for (const parser of TXT_PARSERS) {
+          const match = line.match(parser.regex);
+          if (match) {
+              parsedLineData = parser.parseFn(match);
+              if (parsedLineData) break; // Found a valid parse for this line
+          }
       }
 
-      if (!match) {
-        match = line.match(GENERIC_STYLE_REGEX);
-        dateFormat = 'yyyy-MM-dd HH:mm:ss';
-      }
-
-      if (match) {
+      if (parsedLineData) {
         // If there was a pending message in buffer, push it
         if (currentMessageBuffer.message && currentMessageBuffer.timestamp && currentMessageBuffer.user) {
           messages.push({
@@ -77,59 +184,18 @@ export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): Cha
             message: currentMessageBuffer.message.trim(),
           });
         }
-        currentMessageBuffer = {};
-
-
-        const dateTimeString = match[1] + (match[2] && !GENERIC_STYLE_REGEX.test(line) ? `, ${match[2]}` : '');
-        const user = match[GENERIC_STYLE_REGEX.test(line) ? 2 : 3];
-        const messageContent = match[GENERIC_STYLE_REGEX.test(line) ? 3 : 4];
-        
-        let timestamp: Date;
-        if (GENERIC_STYLE_REGEX.test(line)) { // For [YYYY-MM-DD HH:MM:SS] format
-            timestamp = parseDate(match[1], 'yyyy-MM-dd HH:mm:ss', new Date());
-        } else { // For MM/DD/YY, HH:mm format
-            const datePart = match[1];
-            const timePart = match[2];
-            const fullDateTimeStr = `${datePart}, ${timePart}`;
-            
-            // Try parsing with AM/PM first if present
-            let potentialTimestamp = parseDate(fullDateTimeStr, 'M/d/yy, h:mm a', new Date());
-            if (!isValid(potentialTimestamp)) {
-                 // Try 24-hour format
-                potentialTimestamp = parseDate(fullDateTimeStr, 'M/d/yy, HH:mm', new Date());
-            }
-            if (!isValid(potentialTimestamp)) {
-                 // Try with 4-digit year
-                potentialTimestamp = parseDate(fullDateTimeStr, 'M/d/yyyy, h:mm a', new Date());
-                 if (!isValid(potentialTimestamp)) {
-                    potentialTimestamp = parseDate(fullDateTimeStr, 'M/d/yyyy, HH:mm', new Date());
-                 }
-            }
-            timestamp = potentialTimestamp;
-        }
-
-        if (isValid(timestamp)) {
-          currentMessageBuffer = {
-            timestamp,
-            user: user.trim(),
-            message: messageContent.trim(),
-          };
-          lastMessageTimestamp = timestamp;
-        } else {
-          // If timestamp is invalid, treat as continuation of previous message if possible
-          if (currentMessageBuffer.message && line.trim() !== '') {
-            currentMessageBuffer.message += '\n' + line;
-          } else if (line.trim() !== '') {
-            unknownLines++;
-          }
-        }
-      } else if (line.trim() !== '') {
-        // This line doesn't match the new message format.
-        // Append to the current message buffer if it exists (multi-line message part).
+        // Start a new message buffer
+        currentMessageBuffer = {
+          timestamp: parsedLineData.timestamp,
+          user: parsedLineData.user,
+          message: parsedLineData.message,
+        };
+      } else {
+        // This line doesn't match a new message format. Append to the current message buffer if it exists.
         if (currentMessageBuffer.message) {
           currentMessageBuffer.message += '\n' + line;
         } else {
-          unknownLines++;
+          unknownLines++; // Line doesn't start a message and no current message to append to
         }
       }
     }
@@ -146,11 +212,12 @@ export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): Cha
 
 
   if (unknownLines > 0) {
-    console.warn(`Parser skipped ${unknownLines} lines due to unrecognized format.`);
+    console.warn(`Parser skipped ${unknownLines} lines due to unrecognized format or invalid date.`);
   }
   
-  // Sort messages by timestamp just in case
   messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
   return messages;
 }
+
+    
