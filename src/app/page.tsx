@@ -115,114 +115,92 @@ export default function ChatterStatsPage() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="md:col-span-1 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-semibold">Upload Chat File</CardTitle>
-              <UploadCloud className="h-5 w-5 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <FileUpload onFileProcessed={handleFileProcessed} disabled={isLoading} />
-            </CardContent>
-          </Card>
+        {/* Upload Chat File Card - Moved above the date range and analysis sections */}
+        <Card className="mb-8 shadow-lg hover:shadow-xl transition-shadow duration-300 w-full">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-lg font-semibold">Upload Chat File</CardTitle>
+            <UploadCloud className="h-5 w-5 text-accent" />
+          </CardHeader>
+          <CardContent>
+            <FileUpload onFileProcessed={handleFileProcessed} disabled={isLoading} />
+          </CardContent>
+        </Card>
 
-          <Card className="md:col-span-2 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-semibold">Date Range</CardTitle>
-              <CalendarDays className="h-5 w-5 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <DateRangeSelector
-                initialRange={selectedDateRange.from && selectedDateRange.to ? selectedDateRange : undefined}
-                onRangeChange={handleDateRangeChange}
-                disabled={!hasDataToAnalyze || isLoading}
-                availableDateRange={initialChatDateRange}
-              />
-              {!hasDataToAnalyze && !isLoading && (
-                 <p className="text-sm text-muted-foreground mt-2">Upload a chat file to enable date selection.</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        {/* Main content area: Date Range and Analysis */}
+        {analyzedData && (
 
-        {error && (
-          <Alert variant="destructive" className="mb-8 shadow-md">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+          <div className="flex flex-col gap-6 mb-8 w-full"> {/* Use flex-col for the main container */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6"> {/* Grid for Date Range and Overall Stats */}
+              {/* Date Range Card - Placed in the first column */}
+              <Card className="md:col-span-1 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-lg font-semibold">Date Range</CardTitle>
+                  <CalendarDays className="h-5 w-5 text-accent" />
+                </CardHeader>
+                <CardContent>
+                  <DateRangeSelector
+                    initialRange={selectedDateRange.from && selectedDateRange.to ? selectedDateRange : undefined}
+                    onRangeChange={handleDateRangeChange}
+                    disabled={!hasDataToAnalyze || isLoading}
+                    availableDateRange={initialChatDateRange}
+                    messages={parsedChatData}
+                  />
+                  {!hasDataToAnalyze && !isLoading && (
+                    <p className="text-sm text-muted-foreground mt-2">Upload a chat file to enable date selection.</p>
+                  )}
+                </CardContent>
+              </Card>
 
-        {isLoading && !analyzedData && (
-          <div className="space-y-8">
-            <Card className="shadow-md">
-              <CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader>
-              <CardContent><Skeleton className="h-20 w-full" /></CardContent>
-            </Card>
-             <Card className="shadow-md">
-              <CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader>
-              <CardContent><Skeleton className="h-48 w-full" /></CardContent>
-            </Card>
-          </div>
-        )}
-
-        {!isLoading && !analyzedData && hasDataToAnalyze && selectedDateRange.from && selectedDateRange.to && (
-           <Card className="text-center p-8 shadow-md">
-            <CardTitle className="text-xl mb-2">No Data for Selected Range</CardTitle>
-            <CardDescription>There are no messages within the currently selected date range. Try adjusting the dates or uploading a different file.</CardDescription>
-          </Card>
-        )}
-        
-        {!isLoading && !hasDataToAnalyze && !error && (
-          <Card className="text-center p-8 shadow-md">
-            <CardTitle className="text-xl mb-2">Welcome to ChatterStats!</CardTitle>
-            <CardDescription>Upload your chat file to begin your analysis. See message counts, user activity, and more.</CardDescription>
-          </Card>
-        )}
-
-
-        {analyzedData && !isLoading && (
-          <div className="space-y-8">
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg font-semibold">Overall Statistics</CardTitle>
-                <MessageSquare className="h-5 w-5 text-accent" />
-              </CardHeader>
-              <CardContent>
+              {/* Overall Statistics Card - Placed in the remaining columns */}
+              {/* Overall Statistics */}
+              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-lg font-semibold">Overall Statistics</CardTitle>
+                  <MessageSquare className="h-5 w-5 text-accent" />
+                </CardHeader>
+                <CardContent>
                 <p className="text-3xl font-bold text-primary">{analyzedData.totalMessages.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Total messages in selected range</p>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg font-semibold">Message Distribution per User</CardTitle>
-                <Users className="h-5 w-5 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <MessageDistributionChart data={analyzedData.userMessageCounts} />
-              </CardContent>
-            </Card>
+            {/* Analysis Charts (below Date Range and Overall Stats) */}
+            <div className="space-y-8"> {/* This div will contain the remaining charts */}
+              {/* Message Distribution per User */}
+              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-lg font-semibold">Message Distribution per User</CardTitle>
+                  <Users className="h-5 w-5 text-accent" />
+                </CardHeader>
+                <CardContent>
+                  <MessageDistributionChart data={analyzedData.userMessageCounts} />
+                </CardContent>
+              </Card>
 
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg font-semibold">Message Volume Over Time</CardTitle>
-                 <BarChart3 className="h-5 w-5 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="mb-4">Daily message counts per user.</CardDescription>
-                <TemporalMessageVolumeChart data={analyzedData.temporalVolume.daily} users={analyzedData.allUsers} />
-              </CardContent>
-            </Card>
+              {/* Message Volume Over Time */}
+              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-lg font-semibold">Message Volume Over Time</CardTitle>
+                  <BarChart3 className="h-5 w-5 text-accent" />
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="mb-4">Daily message counts per user.</CardDescription>
+                  <TemporalMessageVolumeChart data={analyzedData.temporalVolume.daily} users={analyzedData.allUsers} />
+                </CardContent>
+              </Card>
 
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg font-semibold">Hourly Message Distribution</CardTitle>
-                <Clock className="h-5 w-5 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <HourlyDistributionChart data={analyzedData.hourlyDistribution} />
-              </CardContent>
-            </Card>
+              {/* Hourly Message Distribution */}
+              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-lg font-semibold">Hourly Message Distribution</CardTitle>
+                  <Clock className="h-5 w-5 text-accent" />
+                </CardHeader>
+                <CardContent>
+                  <HourlyDistributionChart data={analyzedData.hourlyDistribution} />
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
       </div>
