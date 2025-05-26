@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { format } from 'date-fns';
 
 interface DailyDistributionData {
@@ -18,6 +18,17 @@ const DailyDistributionChart: React.FC<DailyDistributionChartProps> = ({ data })
   // Define the desired order of days
   const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+  // Define a color mapping for each day using minimalistic colors
+  const dayColors: { [key: string]: string } = { // Updated dayColors mapping
+    'Monday': '#FF4949',
+    'Tuesday': '#13CE66',
+    'Wednesday': '#FFCC3D',
+    'Thursday': '#2D8EFF',
+    'Friday': '#DCEEFF',
+    'Saturday': '#6E38FF',
+    'Sunday': '#FF18A3',
+  };
+
   // Sort the data according to the desired day order
   const sortedData = data.sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day));
 
@@ -34,10 +45,8 @@ const DailyDistributionChart: React.FC<DailyDistributionChartProps> = ({ data })
 
       return (
         <div className="custom-tooltip" style={{ backgroundColor: '#fff', padding: '10px', border: '1px solid #ccc' }}>
-          <p className="label">{`${label}`}</p>
-          <p>{`Percentage: ${dataPoint.percentage.toFixed(2)}%`}</p>
-          <p>{`Total Messages: ${dataPoint.totalCount}`}</p>
-          {userBreakdown && <p>{`Messages by User:\n${userBreakdown}`}</p>}
+          <p><b>Total Messages:</b> {dataPoint.totalCount}</p>
+          {userBreakdown && <p>{`${userBreakdown}`}</p>}
         </div>
       );
     }
@@ -60,7 +69,11 @@ const DailyDistributionChart: React.FC<DailyDistributionChartProps> = ({ data })
         <XAxis dataKey="day" />
         <YAxis tickFormatter={(tick) => `${tick}%`} />
         <Tooltip content={<CustomTooltip />} />
-        <Bar dataKey="percentage" fill="#8884d8" />
+        <Bar dataKey="percentage">
+          {
+            sortedData.map((entry, index) => <Cell key={`cell-${index}`} fill={dayColors[entry.day]} />)
+          }
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
