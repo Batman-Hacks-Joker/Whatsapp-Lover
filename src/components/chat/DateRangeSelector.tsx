@@ -63,7 +63,7 @@ export function DateRangeSelector({
   }, [selectedStartDate, selectedEndDate, defaultStartDate, defaultEndDate, onRangeChange]);
 
   return (
-    <div className={cn('flex flex-col items-start space-y-2', className)}>
+    <div className={cn('flex flex-col items-center space-y-2', className)}>
       <Popover>
         <PopoverTrigger asChild>
           <Button
