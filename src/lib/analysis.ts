@@ -1,5 +1,5 @@
 import type { ChatMessage, AnalyzedData, DateRange, UserMessageCount, HourlyDistributionItem, TemporalDataItem } from '@/types/chat';
-import { format, eachDayOfInterval, isWithinInterval, getHours } from 'date-fns';
+import { format, eachDayOfInterval, isWithinInterval, getHours, getDay } from 'date-fns';
 
 export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): AnalyzedData | null {
   if (!dateRange.from || !dateRange.to) {
@@ -34,31 +34,6 @@ export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): 
   
   const allUsers = [...new Set(filteredMessages.map(msg => msg.user))].sort();
 
-  // Temporal Message Volume (Daily)
-  const dailyVolume: Record<string, Record<string, number>> = {}; // { 'YYYY-MM-DD': { user1: count, user2: count } }
-  const daysInInterval = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
-
-  daysInInterval.forEach(day => {
-    const formattedDay = format(day, 'yyyy-MM-dd');
-    dailyVolume[formattedDay] = {};
-    allUsers.forEach(user => {
-      dailyVolume[formattedDay][user] = 0; // Initialize count for all users for this day
-    });
-  });
-  
-  filteredMessages.forEach(msg => {
-    const dayKey = format(msg.timestamp, 'yyyy-MM-dd');
-    if (dailyVolume[dayKey]) { // Ensure dayKey exists (it should due to pre-initialization)
-        dailyVolume[dayKey][msg.user] = (dailyVolume[dayKey][msg.user] || 0) + 1;
-    }
-  });
-
-  const temporalDailyData: TemporalDataItem[] = Object.entries(dailyVolume).map(([date, userCountsForDay]) => ({
-    date,
-    ...userCountsForDay,
-  })).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-
   // Hourly Distribution
   const hourlyCounts: number[] = Array(24).fill(0);
   filteredMessages.forEach(msg => {
@@ -70,10 +45,27 @@ export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): 
     count,
   }));
 
+  // Daily Distribution (Monday to Sunday) by Percentage
+  const dayOfWeekCounts: number[] = Array(7).fill(0); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+  filteredMessages.forEach(msg => {
+    const dayOfWeek = getDay(msg.timestamp); // getDay returns 0 for Sunday, 1 for Monday, etc.
+    dayOfWeekCounts[dayOfWeek]++;
+  });
+
+  const totalFilteredMessages = filteredMessages.length;
+  const dailyDistribution = dayOfWeekCounts.map((count, index) => {
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const percentage = totalFilteredMessages === 0 ? 0 : (count / totalFilteredMessages) * 100;
+    return {
+      day: dayNames[index],
+      percentage: parseFloat(percentage.toFixed(2)), // Keep two decimal places
+    };
+  });
+
   return {
     totalMessages,
     userMessageCounts,
-    temporalVolume: { daily: temporalDailyData },
+    dailyDistribution,
     hourlyDistribution,
     allUsers,
   };

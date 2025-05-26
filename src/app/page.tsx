@@ -13,8 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { FileUpload } from '@/components/chat/FileUpload';
 import { DateRangeSelector } from '@/components/chat/DateRangeSelector';
 import { MessageDistributionChart } from '@/components/chat/MessageDistributionChart';
-import { TemporalMessageVolumeChart } from '@/components/chat/TemporalMessageVolumeChart';
 import { HourlyDistributionChart } from '@/components/chat/HourlyDistributionChart';
+import { DailyDistributionChart } from '@/components/chat/DailyDistributionChart';
 import { parseChatFile } from '@/lib/chat-parser';
 import { analyzeChatData } from '@/lib/analysis';
 import type { ChatMessage, AnalyzedData, DateRange } from '@/types/chat';
@@ -223,17 +223,13 @@ export default function ChatterStatsPage() {
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 col-span-1">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg font-semibold">Message Volume Over Time</CardTitle>
+                <CardTitle className="text-lg font-semibold">Message Distribution by Day of Week</CardTitle>
                 <BarChart3 className="h-5 w-5 text-accent" />
               </CardHeader>
               <CardContent>
-                <CardDescription className="mb-4">Daily message counts per user.</CardDescription>
-                <TemporalMessageVolumeChart
-                  data={analyzedData.temporalVolume.daily}
-                  users={analyzedData.allUsers}
-                />
+                <DailyDistributionChart data={analyzedData.dailyDistribution} />
               </CardContent>
             </Card>
 
