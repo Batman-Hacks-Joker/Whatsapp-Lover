@@ -63,12 +63,12 @@ export default function ChatterStatsPage() {
 
       setParsedChatData(messages);
 
-      const timestamps = messages.map((msg) => msg.timestamp.getTime());
+      const timestamps = messages.map((msg) => msg.timestamp.getTime()).filter(t => !isNaN(t));
       const minDate = new Date(Math.min(...timestamps));
       const maxDate = new Date(Math.max(...timestamps));
 
-      setChatDateRange({ from: minDate, to: maxDate });
-      setSelectedDateRange({ from: minDate, to: maxDate });
+      setChatDateRange({ from: minDate, to: maxDate }); // Keep chatDateRange for available range indication if needed later
+      setSelectedDateRange({ from: minDate, to: new Date(minDate.getTime() + 24 * 60 * 60 * 1000) });
 
       toast({
         title: "File Processed",
@@ -177,6 +177,7 @@ export default function ChatterStatsPage() {
                 onRangeChange={handleDateRangeChange}
                 disabled={isLoading}
                 className="w-full"
+                availableDateRange={chatDateRange}
               />
               {!parsedChatData.length && !isLoading && (
                 <p className="text-sm text-muted-foreground mt-2 px-6 pb-6">

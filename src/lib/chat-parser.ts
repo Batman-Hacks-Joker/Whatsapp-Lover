@@ -162,6 +162,26 @@ export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): Cha
   } else { // TXT parsing
     let currentMessageBuffer: Partial<LineParserResult> = {};
 
+    // Helper function to process and potentially add a message
+    const processAndAddMessage = (messageBuffer: Partial<LineParserResult>) => {
+      if (messageBuffer.message && messageBuffer.timestamp && messageBuffer.user) {
+        let messageContent = messageBuffer.message.trim();
+        // Remove "<This message was edited>" tag
+        messageContent = messageContent.replace(/\s*<this message was edited>$/i, '').trim();
+
+        const lowerMessageContent = messageContent.toLowerCase();
+        // Check ignore conditions
+        if (lowerMessageContent !== 'this message was deleted' && lowerMessageContent !== 'null' && lowerMessageContent !== '<media omitted>' && !lowerMessageContent.endsWith('(file attached)')) {
+          messages.push({
+            id: `msg-${messageBuffer.timestamp.getTime()}-${messages.length}`,
+            timestamp: messageBuffer.timestamp,
+            user: messageBuffer.user,
+            message: messageContent,
+          });
+        }
+      }
+    };
+
     for (const line of lines) {
       if (line.trim() === '') continue; // Skip empty lines
 
@@ -175,15 +195,8 @@ export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): Cha
       }
 
       if (parsedLineData) {
-        // If there was a pending message in buffer, push it
-        if (currentMessageBuffer.message && currentMessageBuffer.timestamp && currentMessageBuffer.user) {
-          messages.push({
-            id: `msg-${currentMessageBuffer.timestamp.getTime()}-${messages.length}`,
-            timestamp: currentMessageBuffer.timestamp,
-            user: currentMessageBuffer.user,
-            message: currentMessageBuffer.message.trim(),
-          });
-        }
+        // If there was a pending message in buffer, process and potentially push it
+        processAndAddMessage(currentMessageBuffer);
         // Start a new message buffer
         currentMessageBuffer = {
           timestamp: parsedLineData.timestamp,
@@ -199,17 +212,9 @@ export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): Cha
         }
       }
     }
-    // Push any remaining message in the buffer
-    if (currentMessageBuffer.message && currentMessageBuffer.timestamp && currentMessageBuffer.user) {
-      messages.push({
-        id: `msg-${currentMessageBuffer.timestamp.getTime()}-${messages.length}`,
-        timestamp: currentMessageBuffer.timestamp,
-        user: currentMessageBuffer.user,
-        message: currentMessageBuffer.message.trim(),
-      });
-    }
+    // Process and push any remaining message in the buffer
+    processAndAddMessage(currentMessageBuffer);
   }
-
 
   if (unknownLines > 0) {
     console.warn(`Parser skipped ${unknownLines} lines due to unrecognized format or invalid date.`);
@@ -218,6 +223,5 @@ export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): Cha
   messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
   return messages;
-}
 
     
