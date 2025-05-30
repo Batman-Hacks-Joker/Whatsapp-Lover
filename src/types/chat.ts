@@ -21,6 +21,11 @@ export interface TemporalDataItem {
   [user: string]: number | string; // Message counts for each user, plus the date string
 }
 
+export interface UserLongestMessages {
+  user: string;
+  longestMessages: string[];
+}
+
 export interface AnalyzedData {
   totalMessages: number;
   userMessageCounts: UserMessageCount[];
@@ -29,6 +34,7 @@ export interface AnalyzedData {
   };
   hourlyDistribution: HourlyDistributionItem[];
   totalWords?: number; // Optional: Total words in the analyzed messages
+  userLongestMessages?: UserLongestMessages[]; // Optional: Top 3 longest messages per user
   allUsers: string[]; // List of all unique users found in the filtered data
 }
 

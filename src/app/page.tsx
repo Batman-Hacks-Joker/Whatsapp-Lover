@@ -18,6 +18,7 @@ import { DailyDistributionChart } from '@/components/chat/DailyDistributionChart
 import { parseChatFile, extractEmojis } from '@/lib/chat-parser';
 import { analyzeChatData } from '@/lib/analysis';
 import type { ChatMessage, AnalyzedData, DateRange } from '@/types/chat';
+import UserLongestMessages from '../components/chat/UserLongestMessages';
 import {
   Activity,
   BarChart3,
@@ -275,6 +276,10 @@ export default function ChatterStatsPage() {
                 <UserEmojiChartsContainer messages={filteredMessages} />
               </CardContent>
             </Card>
+
+            {analyzedData.userLongestMessages && analyzedData.userLongestMessages.length > 0 && (
+              <UserLongestMessages userLongestMessages={analyzedData.userLongestMessages} />
+            )}
 
           </div>
         ) : (
