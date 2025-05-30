@@ -28,6 +28,7 @@ export interface AnalyzedData {
     daily: TemporalDataItem[];
   };
   hourlyDistribution: HourlyDistributionItem[];
+  totalWords?: number; // Optional: Total words in the analyzed messages
   allUsers: string[]; // List of all unique users found in the filtered data
 }
 

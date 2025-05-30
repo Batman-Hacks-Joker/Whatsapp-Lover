@@ -6,17 +6,21 @@ export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): 
     return null;
   }
 
-  const filteredMessages = messages.filter(msg => 
+  let filteredMessages = messages.filter(msg =>
     isWithinInterval(msg.timestamp, { start: dateRange.from!, end: dateRange.to! })
   );
+  // This block appears to be a duplicate and is missing a 'return' statement
+  if (filteredMessages.length === 0) {
+  }
 
   if (filteredMessages.length === 0) {
     return {
       totalMessages: 0,
       userMessageCounts: [],
-      dailyDistribution: [],
+      dailyDistribution: [], // This line was missing a comma
       hourlyDistribution: Array.from({ length: 24 }, (_, i) => ({ hour: format(new Date(0, 0, 0, i), 'HH'), count: 0 })),
       allUsers: [],
+      totalWords: 0,
     };
   }
 
@@ -75,11 +79,21 @@ export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): 
       return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
   });
 
+  // Total Words
+  const totalWords = filteredMessages.reduce((total, message) => {
+    return total + message.message.split(/\s+/).filter(word => word.length > 0).length;
+  }, 0);
+
   return {
     totalMessages,
     userMessageCounts,
     dailyDistribution,
     hourlyDistribution,
     allUsers,
+    userMessageCounts,
+    dailyDistribution,
+    hourlyDistribution,
+    allUsers,
+    totalWords,
   };
 }

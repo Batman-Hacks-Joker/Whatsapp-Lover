@@ -200,20 +200,30 @@ export default function ChatterStatsPage() {
               <MessageSquare className="h-5 w-5 text-accent" />
             </CardHeader>
             <CardContent className="flex justify-between items-start gap-4">
-              <div className="flex flex-col">
-                <p className="text-3xl font-bold text-green-600">
-                  {analyzedData ? analyzedData.totalMessages.toLocaleString() : '0'}
-                </p>
-                <p className="text-xs text-black">Total messages in selected range</p>
-              </div>
-              {chatDateRange.from && chatDateRange.to && (
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Timeline</p>
-                  <p className="text-3xl font-bold text-green-600">
-                    {chatDateRange.from.toLocaleDateString('en-GB')} - {chatDateRange.to.toLocaleDateString('en-GB')}
-                  </p>
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex flex-col">
+                    <p className="text-3xl font-bold text-green-600">
+                      {analyzedData ? analyzedData.totalMessages.toLocaleString() : '0'}
+                    </p>
+                    <p className="text-xs text-black">Total messages in selected range</p>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="text-3xl font-bold text-green-600">
+                      {analyzedData && analyzedData.totalWords !== undefined ? analyzedData.totalWords.toLocaleString() : '0'}
+                    </p>
+                    <p className="text-xs text-black">Total words in selected range</p>
+                  </div>
                 </div>
-              )}
+                {chatDateRange.from && chatDateRange.to && (
+                  <div className="text-right">
+                    <p className="ext-sm font-medium text-muted-foreground">Timeline</p>
+                    <p className="text-3xl font-bold text-green-600">
+                      {chatDateRange.from.toLocaleDateString('en-GB')} - {chatDateRange.to.toLocaleDateString('en-GB')}
+                    </p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
