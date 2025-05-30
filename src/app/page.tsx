@@ -14,30 +14,30 @@ import { FileUpload } from '@/components/chat/FileUpload';
 import { DateRangeSelector } from '@/components/chat/DateRangeSelector';
 import { MessageDistributionChart } from '@/components/chat/MessageDistributionChart';
 import { HourlyDistributionChart } from '@/components/chat/HourlyDistributionChart';
-import { DailyDistributionChart } from '@/components/chat/DailyDistributionChart'; // Keeping DailyDistributionChart
+import { DailyDistributionChart } from '@/components/chat/DailyDistributionChart';
 import { parseChatFile, extractEmojis } from '@/lib/chat-parser';
 import { analyzeChatData } from '@/lib/analysis';
 import type { ChatMessage, AnalyzedData, DateRange } from '@/types/chat';
 import {
   Activity,
   BarChart3,
-  CalendarDays,
   Clock,
+  CalendarDays,
   MessageSquare,
   Users,
   UploadCloud,
   Laugh,
 } from 'lucide-react';
-import TopEmojisChart from '@/components/chat/TopEmojisChart';
+import UserEmojiChartsContainer from '../components/chat/UserEmojiChartsContainer';
 
 export default function ChatterStatsPage() {
   const [parsedChatData, setParsedChatData] = useState<ChatMessage[]>([]);
   const [analyzedData, setAnalyzedData] = useState<AnalyzedData | null>(null);
   const [chatDateRange, setChatDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange>({ from: undefined, to: undefined });
-
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filteredMessages, setFilteredMessages] = useState<ChatMessage[]>([]);
   const [topEmojisData, setTopEmojisData] = useState<{ emoji: string; count: number }[]>([]);
   const { toast } = useToast();
 
@@ -71,7 +71,7 @@ export default function ChatterStatsPage() {
       const maxDate = new Date(Math.max(...timestamps));
       setTopEmojisData(topEmojis);
 
-      setChatDateRange({ from: minDate, to: maxDate }); // Keep chatDateRange for available range indication if needed later
+      setChatDateRange({ from: minDate, to: maxDate });
       setSelectedDateRange({ from: minDate, to: new Date(minDate.getTime() + 24 * 60 * 60 * 1000) });
 
       toast({
@@ -114,12 +114,11 @@ export default function ChatterStatsPage() {
         return;
       }
 
-      // Filter messages based on selected date range before analysis and emoji extraction
       const filteredMessages = parsedChatData.filter(
         (msg) => msg.timestamp >= overlapFrom && msg.timestamp <= overlapTo
       );
-      
-      // Extract emojis from the filtered messages
+
+      setFilteredMessages(filteredMessages);
       setTopEmojisData(extractEmojis(filteredMessages));
 
       if (filteredMessages.length === 0) {
@@ -219,9 +218,11 @@ export default function ChatterStatsPage() {
           </Card>
         </div>
 
-        {/* Charts */}
+        {/* Charts in correct order */}
         {hasDataToAnalyze ? (
           <div className="space-y-8">
+
+            {/* 1. Message Distribution per User */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg font-semibold">Message Distribution per User</CardTitle>
@@ -232,7 +233,8 @@ export default function ChatterStatsPage() {
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 col-span-1">
+            {/* 2. Message Distribution by Day of Week */}
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg font-semibold">Message Distribution by Day of Week</CardTitle>
                 <BarChart3 className="h-5 w-5 text-accent" />
@@ -242,6 +244,7 @@ export default function ChatterStatsPage() {
               </CardContent>
             </Card>
 
+            {/* 3. Hourly Message Distribution */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg font-semibold">Hourly Message Distribution</CardTitle>
@@ -252,15 +255,17 @@ export default function ChatterStatsPage() {
               </CardContent>
             </Card>
 
+            {/* 4. Top Emojis Per User */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg font-semibold">Top Used Emojis</CardTitle>
+                <CardTitle className="text-lg font-semibold">Top Emojis Per User</CardTitle>
                 <Laugh className="h-5 w-5 text-accent" />
               </CardHeader>
               <CardContent>
-                <TopEmojisChart data={topEmojisData} />
+                <UserEmojiChartsContainer messages={filteredMessages} />
               </CardContent>
             </Card>
+
           </div>
         ) : (
           parsedChatData.length > 0 && (
