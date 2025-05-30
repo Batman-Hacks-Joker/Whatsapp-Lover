@@ -103,7 +103,7 @@ const TXT_PARSERS: LineParser[] = [
 ];
 
 
-export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): ChatMessage[] {
+export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): { messages: ChatMessage[]; topEmojis: { emoji: string; count: number }[] } {
   const lines = fileContent.split('\n');
   const messages: ChatMessage[] = [];
   let unknownLines = 0;
@@ -220,8 +220,30 @@ export function parseChatFile(fileContent: string, fileType: 'txt' | 'csv'): Cha
     console.warn(`Parser skipped ${unknownLines} lines due to unrecognized format or invalid date.`);
   }
   
-  messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+ messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  const topEmojis = extractEmojis(messages);
+ return { messages, topEmojis };
+}
+export function extractEmojis(messages: ChatMessage[]): { emoji: string; count: number }[] {
+  if (!messages || messages.length === 0) {
+    return [];
+  }
 
-  return messages;
+  const emojiCounts: { [key: string]: number } = {};
+  // Regex to match emojis (basic support, might need refinement for all Unicode emojis)
+  const emojiRegex = /([\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]|[\u2600-\u26FF]|[\u2700-\u27BF])/g;
 
-    
+  messages.forEach(message => {
+    const emojisInMessage = message.message.match(emojiRegex);
+    if (emojisInMessage) {
+      emojisInMessage.forEach(emoji => {
+        emojiCounts[emoji] = (emojiCounts[emoji] || 0) + 1;
+      });
+    }
+  });
+
+  const sortedEmojis = Object.entries(emojiCounts)
+    .sort(([, countA], [, countB]) => countB - countA);
+
+  return sortedEmojis.slice(0, 5).map(([emoji, count]) => ({ emoji, count }));
+}

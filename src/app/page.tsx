@@ -14,8 +14,8 @@ import { FileUpload } from '@/components/chat/FileUpload';
 import { DateRangeSelector } from '@/components/chat/DateRangeSelector';
 import { MessageDistributionChart } from '@/components/chat/MessageDistributionChart';
 import { HourlyDistributionChart } from '@/components/chat/HourlyDistributionChart';
-import { DailyDistributionChart } from '@/components/chat/DailyDistributionChart';
-import { parseChatFile } from '@/lib/chat-parser';
+import { DailyDistributionChart } from '@/components/chat/DailyDistributionChart'; // Keeping DailyDistributionChart
+import { parseChatFile, extractEmojis } from '@/lib/chat-parser';
 import { analyzeChatData } from '@/lib/analysis';
 import type { ChatMessage, AnalyzedData, DateRange } from '@/types/chat';
 import {
@@ -26,7 +26,9 @@ import {
   MessageSquare,
   Users,
   UploadCloud,
+  Laugh,
 } from 'lucide-react';
+import TopEmojisChart from '@/components/chat/TopEmojisChart';
 
 export default function ChatterStatsPage() {
   const [parsedChatData, setParsedChatData] = useState<ChatMessage[]>([]);
@@ -36,6 +38,7 @@ export default function ChatterStatsPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [topEmojisData, setTopEmojisData] = useState<{ emoji: string; count: number }[]>([]);
   const { toast } = useToast();
 
   const handleFileProcessed = async (
@@ -51,7 +54,7 @@ export default function ChatterStatsPage() {
     setSelectedDateRange({ from: undefined, to: undefined });
 
     try {
-      const messages = parseChatFile(content, fileType);
+      const { messages, topEmojis } = parseChatFile(content, fileType);
       if (messages.length === 0) {
         toast({
           variant: "destructive",
@@ -66,6 +69,7 @@ export default function ChatterStatsPage() {
       const timestamps = messages.map((msg) => msg.timestamp.getTime()).filter(t => !isNaN(t));
       const minDate = new Date(Math.min(...timestamps));
       const maxDate = new Date(Math.max(...timestamps));
+      setTopEmojisData(topEmojis);
 
       setChatDateRange({ from: minDate, to: maxDate }); // Keep chatDateRange for available range indication if needed later
       setSelectedDateRange({ from: minDate, to: new Date(minDate.getTime() + 24 * 60 * 60 * 1000) });
@@ -110,9 +114,13 @@ export default function ChatterStatsPage() {
         return;
       }
 
+      // Filter messages based on selected date range before analysis and emoji extraction
       const filteredMessages = parsedChatData.filter(
         (msg) => msg.timestamp >= overlapFrom && msg.timestamp <= overlapTo
       );
+      
+      // Extract emojis from the filtered messages
+      setTopEmojisData(extractEmojis(filteredMessages));
 
       if (filteredMessages.length === 0) {
         setAnalyzedData(null);
@@ -241,6 +249,16 @@ export default function ChatterStatsPage() {
               </CardHeader>
               <CardContent>
                 <HourlyDistributionChart data={analyzedData.hourlyDistribution} />
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-lg font-semibold">Top Used Emojis</CardTitle>
+                <Laugh className="h-5 w-5 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <TopEmojisChart data={topEmojisData} />
               </CardContent>
             </Card>
           </div>
