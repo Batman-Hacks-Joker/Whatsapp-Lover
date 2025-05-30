@@ -23,7 +23,7 @@ export interface TemporalDataItem {
 
 export interface UserLongestMessages {
   user: string;
-  longestMessages: string[];
+  messages: ChatMessage[];
 }
 
 export interface AnalyzedData {
@@ -35,6 +35,7 @@ export interface AnalyzedData {
   hourlyDistribution: HourlyDistributionItem[];
   totalWords?: number; // Optional: Total words in the analyzed messages
   userLongestMessages?: UserLongestMessages[]; // Optional: Top 3 longest messages per user
+  userRandomMessages?: { user: string; message: ChatMessage }[]; // Optional: One random message per user
   allUsers: string[]; // List of all unique users found in the filtered data
 }
 

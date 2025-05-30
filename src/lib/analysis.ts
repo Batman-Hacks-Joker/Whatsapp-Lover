@@ -1,4 +1,4 @@
-import type { ChatMessage, AnalyzedData, DateRange, UserMessageCount, HourlyDistributionItem, DailyDistributionItem, UserLongestMessages } from '@/types/chat';
+import type { ChatMessage, AnalyzedData, DateRange, UserMessageCount, HourlyDistributionItem, DailyDistributionItem, UserLongestMessages, UserRandomMessage } from '@/types/chat';
 import { format, eachDayOfInterval, isWithinInterval, getHours, getDay } from 'date-fns';
 
 export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): AnalyzedData | null {
@@ -96,6 +96,18 @@ export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): 
       messages: messages.sort((a, b) => b.message.length - a.message.length).slice(0, 3), // Get top 3 longest
     }));
 
+  // Random message per User
+  const userRandomMessages: UserRandomMessage[] = Object.entries(userMessages)
+    .filter(([, messages]) => messages.length >= 1) // Only include users with at least 1 message
+    .map(([user, messages]) => {
+      const randomIndex = Math.floor(Math.random() * messages.length);
+      return {
+        user,
+        message: messages[randomIndex], // Get one random message
+      };
+    });
+
+
   // Total Words
   const totalWords = filteredMessages.reduce((total, message) => {
     return total + message.message.split(/\s+/).filter(word => word.length > 0).length;
@@ -108,6 +120,7 @@ export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): 
     hourlyDistribution,
     allUsers,
     totalWords,
+    userRandomMessages,
     userLongestMessages,
   };
 }

@@ -19,6 +19,7 @@ import { parseChatFile, extractEmojis } from '@/lib/chat-parser';
 import { analyzeChatData } from '@/lib/analysis';
 import type { ChatMessage, AnalyzedData, DateRange } from '@/types/chat';
 import UserLongestMessages from '../components/chat/UserLongestMessages';
+import UserRandomMessages from '../components/chat/UserRandomMessages';
 import {
   Activity,
   BarChart3,
@@ -279,6 +280,10 @@ export default function ChatterStatsPage() {
 
             {analyzedData.userLongestMessages && analyzedData.userLongestMessages.length > 0 && (
               <UserLongestMessages userLongestMessages={analyzedData.userLongestMessages} />
+            )}
+
+            {analyzedData.userRandomMessages && analyzedData.userRandomMessages.length > 0 && (
+              <UserRandomMessages userRandomMessages={analyzedData.userRandomMessages} />
             )}
 
           </div>
