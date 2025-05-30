@@ -17,11 +17,12 @@ interface EmojiData {
 
 interface TopEmojisChartProps {
   data: EmojiData[];
+  hideTitleAndDescription?: boolean;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28BCA'];
 
-const TopEmojisChart: React.FC<TopEmojisChartProps> = ({ data }) => {
+const TopEmojisChart: React.FC<TopEmojisChartProps> = ({ data, hideTitleAndDescription = false }) => {
   const sortedData = [...data].sort((a, b) => b.count - a.count);
   const top5Emojis = sortedData.slice(0, 5);
 
@@ -41,10 +42,12 @@ const TopEmojisChart: React.FC<TopEmojisChartProps> = ({ data }) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Top Emoji Distribution</CardTitle>
-        <CardDescription>Distribution of the most frequently used emojis.</CardDescription>
-      </CardHeader>
+      {!hideTitleAndDescription && (
+        <CardHeader>
+          <CardTitle>Top Emoji Distribution</CardTitle>
+          <CardDescription>Distribution of the most frequently used emojis.</CardDescription>
+        </CardHeader>
+      )}
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>

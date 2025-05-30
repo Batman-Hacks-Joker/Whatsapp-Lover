@@ -61,7 +61,7 @@ const UserEmojiChartsContainer: React.FC<UserEmojiChartsContainerProps> = ({ mes
             <CardTitle className="text-lg font-semibold">{`${user}'s Top Emojis`}</CardTitle>
           </CardHeader>
           <CardContent>
-            <TopEmojisChart data={topEmojis} />
+            <TopEmojisChart data={topEmojis} hideTitleAndDescription={true} />
           </CardContent>
         </Card>
       ))}
