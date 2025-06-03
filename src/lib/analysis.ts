@@ -1,4 +1,4 @@
-import type { ChatMessage, AnalyzedData, DateRange, UserMessageCount, HourlyDistributionItem, DailyDistributionItem, UserLongestMessages, UserRandomMessage } from '@/types/chat';
+import type { ChatMessage, AnalyzedData, DateRange, UserMessageCount, HourlyDistributionItem, DailyDistributionItem, UserLongestMessages, UserRandomMessage, UserTopWords } from '@/types/chat';
 import { format, eachDayOfInterval, isWithinInterval, getHours, getDay } from 'date-fns';
 
 export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): AnalyzedData | null {
@@ -19,6 +19,7 @@ export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): 
       allUsers: [],
       totalWords: 0,
     };
+
   }
 
   // Total Messages
@@ -107,7 +108,6 @@ export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): 
       };
     });
 
-
   // Total Words
   const totalWords = filteredMessages.reduce((total, message) => {
     return total + message.message.split(/\s+/).filter(word => word.length > 0).length;
@@ -122,5 +122,43 @@ export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): 
     totalWords,
     userRandomMessages,
     userLongestMessages,
+    userTopWords: getTopWordsByUser(filteredMessages), // Add the new feature
   };
+}
+
+export function getTopWordsByUser(messages: ChatMessage[]): UserTopWords[] {
+  const userWordCounts: Record<string, Record<string, number>> = {};
+
+  // Regex to identify words: at least 3 letters, not starting or ending with emoji/special characters.
+  // This regex is a simplification. A more robust solution would involve a list of specific characters to exclude at start/end.
+  // For this implementation, we'll primarily check for length and basic non-alphanumeric at start/end.
+  const wordRegex = /^[a-zA-Z0-9]{1}[a-zA-Z0-9\s\S]*[a-zA-Z0-9]{1}$/; // Starts/ends with alphanumeric, allows anything in between
+  const startEndSpecialCharRegex = /^[^a-zA-Z0-9]|[^a-zA-Z0-9]$/; // Check for non-alphanumeric at start or end
+
+  messages.forEach(msg => {
+    const user = msg.user;
+    const words = msg.message.toLowerCase().split(/\s+/); // Split by whitespace, convert to lowercase
+
+    words.forEach(word => {
+      // Simple validation: at least 3 characters, and doesn't start/end with common special characters/emojis
+      if (word.length >= 3 && !startEndSpecialCharRegex.test(word) && wordRegex.test(word)) {
+        if (!userWordCounts[user]) {
+          userWordCounts[user] = {};
+        }
+        userWordCounts[user][word] = (userWordCounts[user][word] || 0) + 1;
+      }
+    });
+  });
+
+  const userTopWords: UserTopWords[] = [];
+
+  Object.entries(userWordCounts).forEach(([user, wordCounts]) => {
+    const sortedWords = Object.entries(wordCounts)
+      .sort(([, countA], [, countB]) => countB - countA)
+      .slice(0, 15); // Get top 15
+
+    userTopWords.push({ user, topWords: sortedWords.map(([word, count]) => ({ word, count })) });
+  });
+
+  return userTopWords;
 }

@@ -16,7 +16,7 @@ import { MessageDistributionChart } from '@/components/chat/MessageDistributionC
 import { HourlyDistributionChart } from '@/components/chat/HourlyDistributionChart';
 import { DailyDistributionChart } from '@/components/chat/DailyDistributionChart';
 import { parseChatFile, extractEmojis } from '@/lib/chat-parser';
-import { analyzeChatData } from '@/lib/analysis';
+import { analyzeChatData, getTopWordsByUser } from '@/lib/analysis';
 import type { ChatMessage, AnalyzedData, DateRange } from '@/types/chat';
 import UserLongestMessages from '../components/chat/UserLongestMessages';
 import UserRandomMessages from '../components/chat/UserRandomMessages';
@@ -35,6 +35,7 @@ import UserEmojiChartsContainer from '../components/chat/UserEmojiChartsContaine
 export default function ChatterStatsPage() {
   const [parsedChatData, setParsedChatData] = useState<ChatMessage[]>([]);
   const [analyzedData, setAnalyzedData] = useState<AnalyzedData | null>(null);
+  const [topWordsByUser, setTopWordsByUser] = useState<any[]>([]); // TODO: Define a proper type for this
   const [chatDateRange, setChatDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const [isLoading, setIsLoading] = useState(false);
@@ -102,6 +103,7 @@ export default function ChatterStatsPage() {
       !chatDateRange.to
     ) {
       setAnalyzedData(null);
+ setTopWordsByUser([]);
       return;
     }
 
@@ -125,11 +127,13 @@ export default function ChatterStatsPage() {
 
       if (filteredMessages.length === 0) {
         setAnalyzedData(null);
+ setTopWordsByUser([]);
         return;
       }
 
       const analysisResult = analyzeChatData(filteredMessages, { from: overlapFrom, to: overlapTo });
       setAnalyzedData(analysisResult);
+ setTopWordsByUser(getTopWordsByUser(filteredMessages));
     } catch (e: any) {
       setError(`Failed to analyze data: ${e.message || "Unknown error"}`);
       toast({
@@ -138,7 +142,8 @@ export default function ChatterStatsPage() {
         description: `Failed to analyze data: ${e.message || "Unknown error"}`,
       });
       setAnalyzedData(null);
-    } finally {
+ setTopWordsByUser([]);
+ } finally {
       setIsLoading(false);
     }
   }, [parsedChatData, selectedDateRange, chatDateRange, toast]);
@@ -265,6 +270,34 @@ export default function ChatterStatsPage() {
               </CardHeader>
               <CardContent>
                 <HourlyDistributionChart data={analyzedData.hourlyDistribution} />
+              </CardContent>
+            </Card>
+
+            {/* 4. Top Words Per User */}
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-lg font-semibold">Top 15 Most Common Words by User</CardTitle>
+ <MessageSquare className="h-5 w-5 text-accent" />
+              </CardHeader>
+              <CardContent>
+                {topWordsByUser.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {topWordsByUser.map((userData, index) => (
+                      <div key={index}>
+                        <h3 className="text-md font-bold mb-2">{userData.user}</h3>
+                        <ul className="list-disc list-inside text-sm text-muted-foreground">
+                          {userData.topWords.map((wordData: { word: string; count: number }, wordIndex: number) => (
+                            <li key={wordIndex}>{wordData.word} ({wordData.count})</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground">
+ No word data available for the selected date range.
+                  </p>
+                )}
               </CardContent>
             </Card>
 
