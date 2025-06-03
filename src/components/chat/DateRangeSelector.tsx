@@ -162,7 +162,6 @@ export function DateRangeSelector({
               setSelectedEndDate(defaultEndDate);
             }
           }}
-          disabled={!messages || messages.length === 0}
         >
           Default
         </Button>

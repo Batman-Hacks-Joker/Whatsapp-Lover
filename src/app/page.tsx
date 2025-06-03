@@ -187,6 +187,7 @@ export default function ChatterStatsPage() {
                 disabled={isLoading}
                 className="w-full"
                 availableDateRange={chatDateRange}
+                messages={parsedChatData}
               />
               {!parsedChatData.length && !isLoading && (
                 <p className="text-sm text-muted-foreground mt-2 px-6 pb-6">
