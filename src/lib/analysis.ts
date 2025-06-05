@@ -1,5 +1,5 @@
-import type { ChatMessage, AnalyzedData, DateRange, UserMessageCount, HourlyDistributionItem, DailyDistributionItem, UserLongestMessages, UserRandomMessage, UserTopWords } from '@/types/chat';
-import { format, eachDayOfInterval, isWithinInterval, getHours, getDay } from 'date-fns';
+import type { ChatMessage, AnalyzedData, DateRange, UserMessageCount, HourlyDistributionItem, DailyDistributionItem, UserLongestMessages, UserRandomMessage, UserTopWords, ActivityHeatmapData } from '@/types/chat';
+import { format, eachDayOfInterval, isWithinInterval, getHours, getDay, parseISO } from 'date-fns';
 
 export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): AnalyzedData | null {
   if (!dateRange.from || !dateRange.to) {
@@ -19,6 +19,7 @@ export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): 
       allUsers: [],
       totalWords: 0,
     };
+
 
   }
 
@@ -123,6 +124,7 @@ export function analyzeChatData(messages: ChatMessage[], dateRange: DateRange): 
     userRandomMessages,
     userLongestMessages,
     userTopWords: getTopWordsByUser(filteredMessages), // Add the new feature
+    activityHeatmapData: getActivityHeatmapData(filteredMessages),
   };
 }
 
@@ -161,4 +163,23 @@ export function getTopWordsByUser(messages: ChatMessage[]): UserTopWords[] {
   });
 
   return userTopWords;
+}
+
+export function getActivityHeatmapData(messages: ChatMessage[]): ActivityHeatmapData[] {
+  const heatmapCounts: Record<number, Record<number, number>> = {};
+
+  // Initialize counts for all hours (0-23) and days (0-6)
+  for (let day = 0; day < 7; day++) {
+    heatmapCounts[day] = {};
+    for (let hour = 0; hour < 24; hour++) {
+      heatmapCounts[day][hour] = 0;
+    }
+  }
+
+  messages.forEach(msg => {
+    const dayOfWeek = getDay(msg.timestamp);
+    const hourOfDay = getHours(msg.timestamp);
+    heatmapCounts[dayOfWeek][hourOfDay]++;
+  });
+ return Object.entries(heatmapCounts).flatMap(([day, hours]) => Object.entries(hours).map(([hour, count]) => ({ day: parseInt(day), hour: parseInt(hour), count })));
 }

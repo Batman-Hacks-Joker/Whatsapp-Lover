@@ -15,11 +15,13 @@ import { DateRangeSelector } from '@/components/chat/DateRangeSelector';
 import { MessageDistributionChart } from '@/components/chat/MessageDistributionChart';
 import { HourlyDistributionChart } from '@/components/chat/HourlyDistributionChart';
 import { DailyDistributionChart } from '@/components/chat/DailyDistributionChart';
+import ActivityHeatmap from '@/components/chat/ActivityHeatmap';
 import { parseChatFile, extractEmojis } from '@/lib/chat-parser';
 import { analyzeChatData, getTopWordsByUser } from '@/lib/analysis';
 import type { ChatMessage, AnalyzedData, DateRange } from '@/types/chat';
 import UserLongestMessages from '../components/chat/UserLongestMessages';
 import UserRandomMessages from '../components/chat/UserRandomMessages';
+import UserEmojiChartsContainer from '../components/chat/UserEmojiChartsContainer';
 import {
   Activity,
   BarChart3,
@@ -30,7 +32,6 @@ import {
   UploadCloud,
   Laugh,
 } from 'lucide-react';
-import UserEmojiChartsContainer from '../components/chat/UserEmojiChartsContainer';
 
 export default function ChatterStatsPage() {
   const [parsedChatData, setParsedChatData] = useState<ChatMessage[]>([]);
@@ -236,6 +237,7 @@ export default function ChatterStatsPage() {
           </Card>
         </div>
 
+
         {/* Charts in correct order */}
         {hasDataToAnalyze ? (
           <div className="space-y-8">
@@ -272,6 +274,9 @@ export default function ChatterStatsPage() {
                 <HourlyDistributionChart data={analyzedData.hourlyDistribution} />
               </CardContent>
             </Card>
+
+            {/* Activity Heatmap */}
+            <ActivityHeatmap data={analyzedData.activityHeatmapData} />
 
             {/* 4. Top Words Per User */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
