@@ -56,14 +56,10 @@ const UserEmojiChartsContainer: React.FC<UserEmojiChartsContainerProps> = ({ mes
   return (
     <>
       {userEmojiData.map(({ user, topEmojis }) => (
-        <Card key={user} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-semibold">{`${user}'s Top Emojis`}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TopEmojisChart data={topEmojis} hideTitleAndDescription={true} />
-          </CardContent>
-        </Card>
+        <div key={user} className="mb-6 last:mb-0">
+          <h2 className="text-lg font-semibold mb-2">{`${user}'s Top Emojis`}</h2>
+          <TopEmojisChart data={topEmojis} hideTitleAndDescription={true} />
+        </div>
       ))}
     </>
   );
