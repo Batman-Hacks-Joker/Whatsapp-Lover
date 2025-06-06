@@ -72,6 +72,9 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data }) => {
 
   return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <CardHeader>
+        <CardTitle>Hourly Message Distribution per weekday</CardTitle>
+      </CardHeader>
       <CardContent>
         <div className="overflow-x-auto"> {/* Add overflow for horizontal scrolling */}
           <svg width={SVG_WIDTH} height={SVG_HEIGHT}>

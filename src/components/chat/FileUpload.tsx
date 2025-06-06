@@ -67,7 +67,7 @@ export function FileUpload({ onFileProcessed, disabled }: FileUploadProps) {
         disabled={disabled}
       />
       <Button asChild variant="outline" disabled={disabled}>
-        <label htmlFor="file-upload" className="cursor-pointer w-full">
+        <label htmlFor="file-upload" className="cursor-pointer w-full bg-green-100">
           {selectedFileName ? "Change File" : "Choose File"}
         </label>
       </Button>
